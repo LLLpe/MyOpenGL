@@ -17,32 +17,14 @@ void processInput(GLFWwindow* window) {
 	}
 }
 
-//float vertices[] = {
-//	// positions          // colors           // texture coords
-//	 0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // top right
-//	 0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // bottom right
-//	-0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // bottom left
-//	-0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f    // top left 
-//};
  
 float vertices[] = {
 	// positions         // colors
-	 -0.5f, -0.5f, 0.0f,  1.0f, 0.0f, 0.0f,  0.0f, 0.0f, // bottom right
-	 0.5f, -0.5f, 0.0f,  0.0f, 1.0f, 0.0f,   1.0f, 0.0f,// bottom left
-	 0.0f,  0.5f, 0.0f,  0.0f, 0.0f, 1.0f,   0.5f, 1.0f// top 
+	 -0.5f, -0.5f, 0.0f,  1.0f, 0.0f, 0.0f,  // bottom right
+	 0.5f, -0.5f, 0.0f,  0.0f, 1.0f, 0.0f,  // bottom left
+	 0.0f,  0.5f, 0.0f,  0.0f, 0.0f, 1.0f,  // top 
 
 };
-
-
-//unsigned int indices[] = {
-//	// 注意索引从0开始! 
-//	// 按顶点逆时针方向写
-//
-//	0, 1, 2, // 第一个三角形
-//	2, 3, 0  // 第二个三角形
-//
-//};
- 
 
 unsigned int indices[] = 
 {  
@@ -58,8 +40,7 @@ const char* vertexshaderSource =
 "out vec4 vertexColor;                                    \n "
 "void main(){                                             \n "
 "gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);         \n "
-//"vertexColor = vec4(1.0f,0.5f,0.2f,1.0);      \n "
-"vertexColor = vec4(aColor.x,aColor.y,aColor.z,1.0); }     \n ";
+"vertexColor = vec4(aColor.x,aColor.y,aColor.z,1.0);}     \n ";
 
 const char* fragshaderSource =
 "#version 330 core                                 \n "
@@ -102,10 +83,9 @@ int main(){
 	//开窗！
 	glViewport(0, 0, 800, 600);
 	
-	Shader* myshader = new Shader("vertexSource.txt" ,"fragmentSource.txt");
-
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
+
 	//VBO：Vertex Buffer Objects，缓存CPU传入的模型信息（一长串String）；
 	//VAO：VertexArraysObject ，解析VBO中的信息，一般来说一个模型，就用一个VAO来缓存它
 	//有了VAO后，模型顶点，UV，法线信息明了了，我么就可以方便单独选择顶点为传入VertexShader的数据
@@ -148,36 +128,12 @@ int main(){
 
 	//配置数据挖取（VBO=>VAO.ARRAY_BUFFER）的规则
 	//类比Unity中的TEXCOORD0 TEXCOORD1 TEXCOORD2
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE ,8 * sizeof(float), (void*)0);//分配index0,挖3个值，每隔6个数挖一次，起始点偏移0个值
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE ,6 * sizeof(float), (void*)0);//分配index0,挖3个值，每隔6个数挖一次，起始点偏移0个值
 	glEnableVertexAttribArray(0);//激活
 
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));	//分配index1,挖3个值，每隔6个数挖一次，起始点偏移3个值
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));	//分配index1,挖3个值，每隔6个数挖一次，起始点偏移3个值
 	glEnableVertexAttribArray(1);
 
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));	//分配index1,挖2个值，每隔6个数挖一次，起始点偏移6个值
-	glEnableVertexAttribArray(2);
-
-	//生成一张默认贴图，Bind到VAO的接口上，准备采样
-	unsigned int TexBuffer;
-	glGenTextures(1, &TexBuffer);
-	glBindTexture(GL_TEXTURE_2D, TexBuffer);
-
-	//声明数据结构，使用stbi读图
-	int	width, height, nrChannel;
-	stbi_set_flip_vertically_on_load(1);
-	unsigned char* data = stbi_load("pic.jpg", &width, &height, &nrChannel, 0);
-	//如果数据存在
-	if (data)
-	{
-		//往VAO里写数据
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-		glGenerateMipmap(GL_TEXTURE_2D);
-	}
-	else
-	{
-		cout << "load image falied." << endl;
-	}
-	stbi_image_free(data);
 
 
 	while (!glfwWindowShouldClose(window))  //如果不关闭窗口，那就一直执行SwapBuffer，双重缓冲
@@ -190,13 +146,10 @@ int main(){
 		//也用于测试之前的配置是否成功
 		glClearColor(0.3f, 0.3f, 0.5f, 1.0f);//先配置好我要将屏幕清成生么颜色
 		glClear(GL_COLOR_BUFFER_BIT); //执行清理(这里只执行ColorBuffer的清理)，此外还有GL_DEPTH_BUFFER_BIT，GL_DEPTH_STENCIL_BIT(深度，模板)
-		glBindTexture(GL_TEXTURE_2D, TexBuffer);
 		glBindVertexArray(VAO);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-		//glUseProgram(shaderprogram);
-		glUseProgram(myshader->ID);
-		myshader->use();
-		//glDrawArrays(GL_TRIANGLES, 0, 3);
+		glUseProgram(shaderprogram);
+
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
 		//check and call event swap the buffer
