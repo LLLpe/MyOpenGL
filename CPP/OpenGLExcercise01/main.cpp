@@ -9,6 +9,11 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
+//数学相关
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
 void processInput(GLFWwindow* window) {
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 	{
@@ -17,38 +22,38 @@ void processInput(GLFWwindow* window) {
 	}
 }
 
-//float vertices[] = {
-//	// positions          // colors           // texture coords
-//	 0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // top right
-//	 0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // bottom right
-//	-0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // bottom left
-//	-0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f    // top left 
-//};
- 
 float vertices[] = {
-	// positions         // colors
-	 -0.5f, -0.5f, 0.0f,  1.0f, 0.0f, 0.0f,  0.0f, 0.0f, // bottom right
-	 0.5f, -0.5f, 0.0f,  0.0f, 1.0f, 0.0f,   1.0f, 0.0f,// bottom left
-	 0.0f,  0.5f, 0.0f,  0.0f, 0.0f, 1.0f,   0.5f, 1.0f// top 
-
+    // positions          // colors           // texture coords
+     0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // top right
+     0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // bottom right
+    -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // bottom left
+    -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f    // top left 
 };
-
-
-//unsigned int indices[] = {
-//	// 注意索引从0开始! 
-//	// 按顶点逆时针方向写
-//
-//	0, 1, 2, // 第一个三角形
-//	2, 3, 0  // 第二个三角形
+ 
+//float vertices[] = {
+//	// positions         // colors
+//	 -0.5f, -0.5f, 0.0f,  1.0f, 0.0f, 0.0f,  0.0f, 0.0f, // bottom right
+//	 0.5f, -0.5f, 0.0f,  0.0f, 1.0f, 0.0f,   1.0f, 0.0f,// bottom left
+//	 0.0f,  0.5f, 0.0f,  0.0f, 0.0f, 1.0f,   0.5f, 1.0f// top 
 //
 //};
+
+
+unsigned int indices[] = {
+	// 注意索引从0开始! 
+	// 按顶点逆时针方向写
+
+	0, 2, 1, // 第一个三角形
+	2, 0, 3  // 第二个三角形
+
+};
  
 
-unsigned int indices[] = 
-{  
-	// note that we start from 0!
-	0, 1, 2,   // first triangle
-};
+//unsigned int indices[] = 
+//{  
+//	// note that we start from 0!
+//	0, 1, 2,   // first triangle
+//};
 
 
 const char* vertexshaderSource =
@@ -158,12 +163,18 @@ int main(){
 	glEnableVertexAttribArray(2);
 
 	//生成一张默认贴图，Bind到VAO的接口上，准备采样
-	unsigned int TexBuffer;
-	glGenTextures(1, &TexBuffer);
-	glBindTexture(GL_TEXTURE_2D, TexBuffer);
+	unsigned int TexBufferA;
+	glGenTextures(1, &TexBufferA);
+	//有多张图的话，就还需要使用glActiveTexture()方法来为多张贴图安排贴图的槽位，否则GPU读不到其他贴图
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, TexBufferA);
 
 	//声明数据结构，使用stbi读图
 	int	width, height, nrChannel;
+
+	//图片格式中，Y轴0是在左上方，所以让OpenGL直接读图，他会从图片的左上方开始读图，
+	// 但是OpenGL在显示图片时，是从左下角开始显示的(读到的第一个像素会被显示在左下方！)，所以效果会有颠倒！
+	//因此，必须有一个flip的操作
 	stbi_set_flip_vertically_on_load(1);
 	unsigned char* data = stbi_load("pic.jpg", &width, &height, &nrChannel, 0);
 	//如果数据存在
@@ -179,9 +190,38 @@ int main(){
 	}
 	stbi_image_free(data);
 
+	unsigned int TexBufferB;
+	glGenTextures(1, &TexBufferB);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, TexBufferB);
+	unsigned char* data2 = stbi_load("pic2.jpg", &width, &height, &nrChannel, 0);
+	if (data2)
+	{
+		//往VAO里写数据
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data2);
+		glGenerateMipmap(GL_TEXTURE_2D);
+	}
+	else
+	{
+		cout << "load image falied." << endl;
+	}
+
+	stbi_image_free(data2);
+
+	glm::mat4 trans = glm::mat4(1.0f);
+	glm::mat4 modeMatrix = glm::mat4(1.0f);
+	modeMatrix = glm::rotate(modeMatrix , glm::radians( -55.0f ), glm::vec3(1.0f, 0, 0));
+	glm::mat4 viewMatrix = glm::mat4(1.0f);
+	viewMatrix = glm::translate(viewMatrix, glm::vec3(0, 0,-3.0f));
+	glm::mat4 projMatrix = glm::mat4(1.0f);
+	//相机张角值，宽高比，裁切平面
+	projMatrix = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 100.0f);
+	
 
 	while (!glfwWindowShouldClose(window))  //如果不关闭窗口，那就一直执行SwapBuffer，双重缓冲
 	{
+		//trans = glm::rotate(trans, glm::radians(5.0f), glm::vec3(0.0, 0.0, 0.5));
+		//trans = glm::scale(trans, glm::vec3(1.01, 1.01, 1.01));
 		//Input
 		processInput(window); //一般先获取输入，在下一次循环的时候再执行输入相关操作，所以写在glfwPollEvents()前面
 
@@ -190,12 +230,24 @@ int main(){
 		//也用于测试之前的配置是否成功
 		glClearColor(0.3f, 0.3f, 0.5f, 1.0f);//先配置好我要将屏幕清成生么颜色
 		glClear(GL_COLOR_BUFFER_BIT); //执行清理(这里只执行ColorBuffer的清理)，此外还有GL_DEPTH_BUFFER_BIT，GL_DEPTH_STENCIL_BIT(深度，模板)
-		glBindTexture(GL_TEXTURE_2D, TexBuffer);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, TexBufferA);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, TexBufferB); 
 		glBindVertexArray(VAO);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-		//glUseProgram(shaderprogram);
+
 		glUseProgram(myshader->ID);
 		myshader->use();
+		glUniform1i(glGetUniformLocation(myshader->ID, "ourTexture"), 0);
+		glUniform1i(glGetUniformLocation(myshader->ID, "ourTexture2"), 1);
+		//将transformLoc传入Vert中的 "transform"
+		unsigned int transformLoc = glGetUniformLocation(myshader->ID, "transform");
+		glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(trans));
+		glUniformMatrix4fv(glGetUniformLocation(myshader->ID, "modeMatrix"), 1, GL_FALSE, glm::value_ptr(modeMatrix));
+		glUniformMatrix4fv(glGetUniformLocation(myshader->ID, "viewMatrix"), 1, GL_FALSE, glm::value_ptr(viewMatrix));
+		glUniformMatrix4fv(glGetUniformLocation(myshader->ID, "projMatrix"), 1, GL_FALSE, glm::value_ptr(projMatrix));
+
 		//glDrawArrays(GL_TRIANGLES, 0, 3);
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
