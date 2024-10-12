@@ -14,6 +14,6 @@ void main()
 {                                 
 	vertexColor = vec4(aColor ,1.0);     
 	gl_Position = projMatrix * viewMatrix * modeMatrix * vec4(aPos , 1.0);
-	//gl_Position = transform * vec4(aPos , 1.0);
+	//gl_Position = transform * vec4(aPos + offset , 1.0);
 	texCoord = aTexCoord;
 }
